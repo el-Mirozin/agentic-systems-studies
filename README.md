@@ -1,5 +1,5 @@
 # agentic-systems-studies
-Repo to save and share whatever I'm studying about LLMs and its applications
+Repo to save and share whatever I'm studying about LLMs and its applications.
 
 As of now, this repo contains only a simple agent that reads an investment portfolio listed on a B3 pdf and analyzes how diversified your investments are. My idea is to create other, similar, mini-agents and expand this repo, until I can create a multi-agent system  concatenating the use of all these little ones.
 
