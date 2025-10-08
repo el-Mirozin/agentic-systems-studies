@@ -48,8 +48,8 @@ class PortfolioDependencies:
     pdf_path: str
 
 
-# ===== Helper Functions =====
-
+# ===== Auxiliary Functions =====
+# Function to extract investment data from a B3 PDF file and structure it into a DataFrame
 def extract_portfolio_from_pdf(pdf_path: str) -> pd.DataFrame:
     """
     Extract investment data from a B3 PDF file.
@@ -92,7 +92,7 @@ def extract_portfolio_from_pdf(pdf_path: str) -> pd.DataFrame:
     
     return investments
 
-
+# Function to calculate HHI and normalized HHI from the investments dataframe output by the previous function
 def calculate_hhi_metrics(investments: pd.DataFrame) -> dict:
     """
     Calculate HHI and normalized HHI for a portfolio.
@@ -125,12 +125,9 @@ def calculate_hhi_metrics(investments: pd.DataFrame) -> dict:
 
 
 # ===== Pydantic-AI Agent Setup =====
-
-# Create the agent with result type
+# Create the agent
 portfolio_agent: Agent[PortfolioDependencies, PortfolioAnalysis] = Agent(
     model,
-    #deps_type=PortfolioDependencies,
-    #result_type=PortfolioAnalysis,
     system_prompt="""You are a financial portfolio analyst specializing in diversification analysis.
     
     Your task is to analyze investment portfolios using the Herfindahl-Hirschman Index (HHI) and provide
@@ -146,7 +143,7 @@ portfolio_agent: Agent[PortfolioDependencies, PortfolioAnalysis] = Agent(
     Provide practical, friendly advice on portfolio diversification."""
 )
 
-
+# Giving the agent a tool to read and parse the PDF file
 @portfolio_agent.tool
 async def read_portfolio_pdf(ctx: RunContext[PortfolioDependencies]) -> str:
     """Read and parse the portfolio PDF file."""
@@ -161,7 +158,7 @@ async def read_portfolio_pdf(ctx: RunContext[PortfolioDependencies]) -> str:
     
     return result
 
-
+# Now a tool to calculate the HHI and normalized HHI
 @portfolio_agent.tool
 async def calculate_diversification_metrics(ctx: RunContext[PortfolioDependencies]) -> dict:
     """Calculate HHI and diversification metrics for the portfolio."""
@@ -182,7 +179,7 @@ async def calculate_diversification_metrics(ctx: RunContext[PortfolioDependencie
 
 
 # ===== Main Function =====
-
+# Main function to run the agent and get its analysis as output
 async def analyze_portfolio(pdf_path: str) -> PortfolioAnalysis:
     """
     Analyze a portfolio PDF and return diversification analysis.
