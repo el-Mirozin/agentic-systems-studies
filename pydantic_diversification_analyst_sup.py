@@ -48,6 +48,12 @@ class PortfolioDependencies:
     """Dependencies for the portfolio agent."""
     pdf_path: str
 
+# create class PDFReader to read the PDF file and extract relevant info
+class PDFReaderTool(BaseModel):
+    """Another agent as a tool for reading PDFs and extracting investment info."""
+    pdf_path: str = Field(description="Path to the PDF file")
+
+
 
 # ===== Auxiliary Functions =====
 # Function to extract investment data from a B3 PDF file and structure it into a DataFrame
@@ -55,42 +61,34 @@ def extract_portfolio_from_pdf(pdf_path: str) -> pd.DataFrame:
     """
     Extract investment data from a B3 PDF file.
     """
-    results = []
-    
     try:
-        with open(pdf_path, 'rb') as file:
-            pdf_reader = PyPDF2.PdfReader(file)
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-            
-            results = {
-                'name_values': [],
-                'total_values': []
-            }
-    
-            name_pattern = r'atualizado\s+(\S+)'
-    
-            value_pattern = r'Total\s+R\$\s*([\d.,]+)'
-    
-            name_matches = re.findall(name_pattern, text, re.IGNORECASE)
-            results['name_values'] = [match.strip() for match in name_matches]
-    
-            value_matches = re.findall(value_pattern, text, re.IGNORECASE)
-            results['inv_values'] = [f"R$ {match.strip()}" for match in value_matches]
-
-            investments = pd.DataFrame({
-                'name': pd.Series(results['name_values']),
-                'value': pd.Series(results['inv_values'])
-            })
-            investments['value'] = (investments['value'].str.replace('\D', '', regex = True).astype(float)) / 100
-            investments = investments.fillna(0)
+        result = subprocess.run(
+            ['python', 'reader.py', pdf_path],
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        #return result
     
     except FileNotFoundError:
         print(f"PDF file not found: {pdf_path}")
     except Exception as e:
-        print(f"Error reading PDF: {e}")
+        return f"Error reading PDF: {str(e)}"
     
+    # Parsing investment names and values from the text with regex because I'm a lazy DS
+    names = re.findall(r'\*\s+\*\*(.+?)\*\*', result)
+    values = re.findall(r'R\$ ([\d,]+\.\d{2})', result)
+    values = values[:-1]  # Removing total portfolio value
+
+    # Convert values to float (removing commas)
+    values = [float(v.replace(',', '')) for v in values]
+
+    # Create DataFrame
+    investments = pd.DataFrame({
+        'name': names,
+        'value': values
+    })
+      
     return investments
 
 # Function to calculate HHI and normalized HHI from the investments dataframe output by the previous function

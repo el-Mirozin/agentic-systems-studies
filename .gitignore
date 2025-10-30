@@ -208,3 +208,6 @@ __marimo__/
 
 # Text documents
 *.pdf
+
+# Test notebooks
+*rascunho*

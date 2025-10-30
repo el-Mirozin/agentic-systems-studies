@@ -2,38 +2,39 @@
 Investment Portfolio PDF Extractor using pydantic-ai
 Extracts investment names and values from unstructured PDF documents.
 """
-
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 import base64
 import io
+import dotenv
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.providers.google import GoogleProvider
-import pypdf
+import PyPDF2
 
 
 #===== Setup =====
-provider = GoogleProvider(api_key=GEMINI_API_KEY)
+provider = GoogleProvider(api_key=os.getenv('GEMINI_API_KEY'))
 model = GoogleModel(provider=provider, model_name='gemini-2.5-flash')
-pdf_path = PDF_PATH
+pdf_path = os.getenv('PDF_PATH')
 
 # Define the structured output model
 class Investment(BaseModel):
     """Represents a single investment in the portfolio."""
     name: str = Field(description="The name or ticker of the investment")
     value: float = Field(description="The current value of the investment in the portfolio's currency")
-    currency: str = Field(default="USD", description="Currency of the value")
+    currency: str = Field(default="BRL", description="Currency of the value")
 
 
 class PortfolioData(BaseModel):
     """Complete portfolio extraction result."""
     investments: List[Investment] = Field(description="List of all investments found in the portfolio")
     total_value: float = Field(description="Total portfolio value if stated, otherwise sum of investments")
-    currency: str = Field(default="USD", description="Primary currency of the portfolio")
+    currency: str = Field(default="BRL", description="Primary currency of the portfolio")
 
 
 # Define dependencies for the agent
@@ -44,24 +45,25 @@ class PortfolioDeps:
     
 
 # Create the agent with GPT-4 Vision capabilities
-agent = Agent(
+agent = Agent[PortfolioData](
     model=model,
-    result_type=PortfolioData,
     deps_type=PortfolioDeps,
     system_prompt=(
-        "You are an expert financial analyst specializing in portfolio analysis. "
-        "Your task is to extract investment information from portfolio documents that may have varying formats. "
-        "\n\n"
-        "When analyzing a portfolio document:\n"
-        "1. Identify all investment holdings (stocks, bonds, funds, ETFs, etc.)\n"
-        "2. Extract the exact name for each investment\n"
-        "3. Find the current value for each investment\n"
-        "4. Identify the currency being used\n"
-        "5. Calculate or extract the total portfolio value\n"
-        "\n"
-        "Be thorough and accurate. If you find percentages, allocations, or quantities, "
-        "focus on extracting the actual monetary values. Handle various formats including "
-        "tables, lists, and narrative text."
+        """
+        You are an expert financial analyst specializing in portfolio analysis. 
+        Your task is to extract investment information from portfolio documents that may have varying formats. 
+        
+        When analyzing a portfolio document:
+        1. Identify all investment holdings (stocks, bonds, funds, ETFs, etc.)
+        2. Extract the exact name for each investment
+        3. Find the current value for each investment
+        4. Identify the currency being used
+        5. Calculate or extract the total portfolio value
+        
+        Be thorough and accurate. If you find percentages, allocations, or quantities, 
+        focus on extracting the actual monetary values. Handle various formats including 
+        tables, lists, and narrative text.
+        """
     ),
 )
 
@@ -76,7 +78,7 @@ async def read_pdf_as_text(ctx: RunContext[PortfolioDeps]) -> str:
     
     text_content = []
     with open(pdf_path, 'rb') as file:
-        pdf_reader = pypdf.PdfReader(file)
+        pdf_reader = PyPDF2.PdfReader(file)
         for page_num, page in enumerate(pdf_reader.pages, 1):
             text = page.extract_text()
             text_content.append(f"--- Page {page_num} ---\n{text}\n")
@@ -129,48 +131,20 @@ async def extract_portfolio_data(pdf_path: str | Path) -> PortfolioData:
     
     # Run the agent with a prompt to analyze the portfolio
     result = await agent.run(
-        "Please analyze this portfolio document and extract all investment holdings with their values. "
-        "Use the available tools to read the PDF content, either as text or as images if the layout is complex. "
-        "Make sure to capture all investments accurately.",
+        """
+        Please analyze this portfolio document and extract all investment holdings with their values.
+        Use the available tools to read the PDF content, either as text or as images if the layout is complex. 
+        Make sure to capture all investments accurately.
+        """,
         deps=deps,
     )
     
-    return result.data
+    return result.output
 
 
 # Example usage
-async def main():
-    """Example of how to use the portfolio extractor."""
-    import sys
-    
-    if len(sys.argv) < 2:
-        print("Usage: python script.py <path_to_portfolio.pdf>")
-        sys.exit(1)
-    
-    pdf_path = sys.argv[1]
-    
-    print(f"Extracting portfolio data from: {pdf_path}")
-    
-    try:
-        portfolio = await extract_portfolio_data(pdf_path)
-        
-        # Print results as formatted JSON
-        print("\n" + "="*50)
-        print("PORTFOLIO EXTRACTION RESULTS")
-        print("="*50 + "\n")
-        
-        print(portfolio.model_dump_json(indent=2))
-        
-        print("\n" + "="*50)
-        print(f"Total Investments Found: {len(portfolio.investments)}")
-        print(f"Total Portfolio Value: {portfolio.currency} {portfolio.total_value:,.2f}")
-        print("="*50)
-        
-    except Exception as e:
-        print(f"Error extracting portfolio data: {e}")
-        raise
+import asyncio
 
+portfolio = asyncio.run(extract_portfolio_data(pdf_path))
 
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+print(portfolio)
