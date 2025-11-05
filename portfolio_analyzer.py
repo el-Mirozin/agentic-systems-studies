@@ -167,7 +167,8 @@ class PortfolioAnalyzer:
             # Parse investment names and values from the text output using regex
             names = re.findall(r'\*\s+\*\*(.+?)\*\*', text_output)
             values = re.findall(r'R\$ ([\d,]+\.\d{2})', text_output)
-            values = values[:-1]  # Removing total portfolio value
+            # Removing last value, which does not correspond to an investment
+            values = values[:-1]  # for some reason, this line must be commented, the file saved, and then uncommented and the file saved again to work properly.
 
             # Convert values to float (removing commas)
             values = [float(v.replace(',', '')) for v in values]
@@ -241,7 +242,20 @@ class PortfolioAnalyzer:
             3. Provide a comprehensive analysis of the portfolio's diversification level
             4. Give specific recommendations based on the HHI values
 
-            Be specific about the numbers and provide actionable insights.""",
+            Be specific about the numbers and provide actionable insights.
+            
+            It is extremely important that you provide an output structured as a PortfolioAnalysis object, like the following example:
+            "{
+                'total_value: 18426.05
+                'num_holdings': 8
+                'hhi': 0.1513
+                'normalized_hhi': 0.0301
+                'diversification_level': 'moderately concentrated'
+                'commentary': 'Your portfolio, comprising 8 investments with a total value of 18,426.05, has been analyzed for diversification. Based on the HHI of 0.1513, your portfolio falls into the **moderately concentrated** category (HHI around 0.1-0.3). This suggests that while you have a good number of different investments, there might be a few larger positions that contribute more significantly to the overall portfolio value. However, the **Normalized HHI of 0.0301** provides a more nuanced view. With a value well below 0.1 (the threshold for well diversified), and accounting for your 8 distinct holdings, your portfolio is considered **well diversified**. This means that despite some individual investments potentially being larger, the spread across your assets is effective in mitigating concentration risk. The low normalized HHI indicates that you have done an excellent job in distributing your investments across your current holdings. **Specific Recommendations:** 1.  **Maintain Your Diversification Strategy:** Your current approach has resulted in a well-diversified portfolio, as evidenced by your Normalized HHI of 0.0301. Continue to select investments that contribute to this healthy spread. 2.  **Strategic Rebalancing (Optional):** While your diversification is strong, if you aim to shift your raw HHI closer to the well diversified range (below 0.1), you could consider slightly reducing the relative weight of your largest holdings over time, such as Tesouro IPCA+ 2029 (23%) and Tesouro IPCA+ 2026 (18%), and reallocating towards smaller positions or new, uncorrelated assets. This would further distribute your capital, though it is not strictly necessary given your strong normalized HHI. 3.  **Continuous Monitoring:** Periodically review your portfolios diversification, especially after making significant changes to your investments. This ensures that your portfolio remains aligned with your risk tolerance and financial objectives. 4.  **Consider Sectoral Diversification:** Although the HHI indicates good overall diversification, ensure your investments are also diversified across different sectors or industries, especially within your equity holdings like BIXN39 - ISHARES GLOBAL TECH ETF and TECK11 - IT NOW NYSE FANG+TM FUNDO DE ÍNDICE, to avoid overexposure to specific market segments. In conclusion, your portfolio demonstrates a very good level of diversification, particularly when considering the number of unique investments. You are in a strong position, and any further adjustments would be to fine-tune an already sound strategy.'
+            }"
+            Pay very close attention to the formatting of the output, as it must strictly adhere to the PortfolioAnalysis structure, and it must NOT be encapsulated within any other text or markdown. It must be wrapped only in triple quotes.
+            Under absolutely no circumstances should your output contain the string "```" or "´´´".
+            """,
             deps=deps,
         )
 
