@@ -10,6 +10,7 @@ import re
 import pandas as pd
 from dataclasses import dataclass
 from typing import List
+import subprocess
 import PyPDF2
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
@@ -63,21 +64,29 @@ def extract_portfolio_from_pdf(pdf_path: str) -> pd.DataFrame:
     """
     try:
         result = subprocess.run(
-            ['python', 'reader.py', pdf_path],
+            ['python', 'pydantic_pdf_reader.py', pdf_path],
             capture_output=True,
             text=True,
             timeout=60
         )
-        #return result
-    
+
+        # Check if subprocess completed successfully
+        if result.returncode != 0:
+            raise Exception(f"pydantic_pdf_reader.py failed with error: {result.stderr}")
+
+        # Get the text output from the subprocess
+        text_output = result.stdout
+
     except FileNotFoundError:
-        print(f"PDF file not found: {pdf_path}")
+        raise FileNotFoundError(f"PDF file not found: {pdf_path}")
+    except subprocess.TimeoutExpired:
+        raise Exception(f"PDF processing timed out for: {pdf_path}")
     except Exception as e:
-        return f"Error reading PDF: {str(e)}"
-    
+        raise Exception(f"Error reading PDF: {str(e)}")
+
     # Parsing investment names and values from the text with regex because I'm a lazy DS
-    names = re.findall(r'\*\s+\*\*(.+?)\*\*', result)
-    values = re.findall(r'R\$ ([\d,]+\.\d{2})', result)
+    names = re.findall(r'\*\s+\*\*(.+?)\*\*', text_output)
+    values = re.findall(r'R\$ ([\d,]+\.\d{2})', text_output)
     values = values[:-1]  # Removing total portfolio value
 
     # Convert values to float (removing commas)
@@ -88,7 +97,7 @@ def extract_portfolio_from_pdf(pdf_path: str) -> pd.DataFrame:
         'name': names,
         'value': values
     })
-      
+
     return investments
 
 # Function to calculate HHI and normalized HHI from the investments dataframe output by the previous function
