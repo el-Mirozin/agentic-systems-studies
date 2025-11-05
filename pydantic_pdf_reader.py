@@ -144,7 +144,19 @@ async def extract_portfolio_data(pdf_path: str | Path) -> PortfolioData:
 
 # Example usage
 import asyncio
+import sys
 
-portfolio = asyncio.run(extract_portfolio_data(pdf_path))
+if __name__ == "__main__":
+    # Accept PDF path from command line argument or environment variable
+    if len(sys.argv) > 1:
+        pdf_path = sys.argv[1]
+    else:
+        pdf_path = os.getenv('PDF_PATH')
 
-print(portfolio)
+    if not pdf_path:
+        print("Error: No PDF path provided. Use: python pydantic_pdf_reader.py <pdf_path>", file=sys.stderr)
+        sys.exit(1)
+
+    portfolio = asyncio.run(extract_portfolio_data(pdf_path))
+
+    print(portfolio)
