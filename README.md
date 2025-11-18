@@ -7,6 +7,8 @@ As of now, this repo contains only a few versions of a simple agent that reads a
 
 <b>Next steps:</b>
 
+- Act upon agent evaluation findings: first version has a problem on its pdf-reading tool, second version fixes this problem but is very intensive in gemini use, usage quotas are exceeded fast;
+
 - Improve agent capabilities by including more diversification measures so that final analysis is more robust  -- include Sharpe ratio, effective number of assets, Gini coefficients, diversification ratios, measures of variance (these depend on performance data), average pairwise correlation, effective number of bets and diversification score (Choueifaity & Coignard, 2008) as metrics;
     
 - Analyze feasibility and, if possible, create a benchmark comparing agent's performance with current market practices.
