@@ -12,7 +12,8 @@ import tempfile
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
-from portfolio_analyzer import PortfolioAnalyzer
+from portfolio_analyzer_dspy import PortfolioAnalyzer
+#from portfolio_analyzer import PortfolioAnalyzer
 
 # Load environment variables
 load_dotenv()
