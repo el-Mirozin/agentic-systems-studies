@@ -187,7 +187,8 @@ def main():
                     analyzer = PortfolioAnalyzer(api_key=api_key)
 
                     # Run analysis
-                    analysis = asyncio.run(analyzer.analyze_portfolio(tmp_file_path))
+                    analysis = analyzer.analyze_portfolio(tmp_file_path)
+                    #analysis = asyncio.run(analyzer.analyze_portfolio(tmp_file_path))
 
                 st.success("✅ Analysis completed!")
 

@@ -14,7 +14,7 @@ from typing import Optional
 from pathlib import Path
 from pydantic import BaseModel, Field
 import dspy
-from dspy.functional import TypedPredictor
+import json
 
 
 # ===== Data Models =====
@@ -39,11 +39,11 @@ class PortfolioAnalysis(BaseModel):
 # ===== DSPy Signatures =====
 
 class AnalyzePortfolioDiversification(dspy.Signature):
-    """Analyze investment portfolio diversification using HHI metrics."""
+    """Analyze investment portfolio diversification using HHI metrics and provide detailed commentary."""
     
     portfolio_data: str = dspy.InputField(desc="Portfolio holdings with names and values")
     metrics_data: str = dspy.InputField(desc="Calculated HHI and diversification metrics")
-    analysis: PortfolioAnalysis = dspy.OutputField(desc="Complete portfolio analysis with HHI metrics and commentary")
+    commentary: str = dspy.OutputField(desc="Detailed analysis commentary explaining the diversification level and providing specific recommendations")
 
 
 # ===== Portfolio Analyzer Class =====
@@ -68,8 +68,8 @@ class PortfolioAnalyzer:
         # Configure DSPy with Google Gemini
         self._setup_dspy()
         
-        # Initialize the predictor
-        self.predictor = TypedPredictor(AnalyzePortfolioDiversification)
+        # Initialize the predictor with ChainOfThought
+        self.predictor = dspy.ChainOfThought(AnalyzePortfolioDiversification)
 
     def _setup_dspy(self):
         """Setup DSPy with Google Gemini model."""
@@ -230,15 +230,18 @@ Investment Details:
                 metrics_data=metrics_data
             )
             
-            # Ensure all required fields are present
-            analysis = result.analysis
+            # Extract commentary from DSPy result
+            commentary = result.commentary
             
-            # Override with calculated values to ensure accuracy
-            analysis.total_value = metrics['total_value']
-            analysis.num_holdings = len(investments)
-            analysis.hhi = round(metrics['hhi'], 4)
-            analysis.normalized_hhi = round(metrics['normalized_hhi'], 4)
-            analysis.diversification_level = diversification_level
+            # Create PortfolioAnalysis with calculated metrics and DSPy commentary
+            analysis = PortfolioAnalysis(
+                total_value=metrics['total_value'],
+                num_holdings=len(investments),
+                hhi=round(metrics['hhi'], 4),
+                normalized_hhi=round(metrics['normalized_hhi'], 4),
+                diversification_level=diversification_level,
+                commentary=commentary
+            )
             
             return analysis
             
